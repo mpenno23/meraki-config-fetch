@@ -69,8 +69,9 @@ def get_config(API_KEY, network_id, output_file, dashboard):
         except:
             print("Error processing Request ", api_call)
         else:
-            with open(output_file, "w") as outfile:
-                outfile.write(str(config) + "\n")
+            with open(output_file, "a") as outfile:
+                json.dump(config, outfile, indent = 4)
+                outfile.write("\n")
 
 
 # Press the green button in the gutter to run the script.
