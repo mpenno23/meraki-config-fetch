@@ -63,6 +63,7 @@ def get_config(API_KEY, network_id, output_file, dashboard):
         , "dashboard.appliance.getOrganizationApplianceVpnVpnFirewallRules(organization_id)"
         , "dashboard.appliance.getNetworkApplianceWarmSpare(network_id)"
                  ]
+    outfile = ""
     for api_call in api_calls:
         try:
             config = eval(api_call)
@@ -73,6 +74,7 @@ def get_config(API_KEY, network_id, output_file, dashboard):
                 json.dump(config, outfile, indent = 4)
                 outfile.write("\n")
 
+#close file when loop is done
 
 # Press the green button in the gutter to run the script.
 
@@ -94,6 +96,9 @@ if __name__ == '__main__':
     output_file = ""
     for entry in network_id_raw:
         network = entry["id"]
+        if "appliance" not in entry['productTypes']:
+            print("Your network does not contain a security appliance, skipping")
+            continue
         output_file = entry["name"] + ".json"
         network_ids.append(network)
         get_config(API_KEY, network, output_file, dashboard)
