@@ -12,7 +12,8 @@ def get_config(API_KEY, network_id, output_file, dashboard):
     static_route_id = 0
     custom_performance_class_id = 0
     vlan_id = 0
-
+    
+    #list of API calls to GET information from the MX
     api_calls = ["dashboard.appliance.getNetworkApplianceConnectivityMonitoringDestinations(network_id)"
         , "dashboard.appliance.getNetworkApplianceContentFiltering(network_id)"
         , "dashboard.appliance.getNetworkApplianceFirewallCellularFirewallRules(network_id)"
@@ -63,13 +64,14 @@ def get_config(API_KEY, network_id, output_file, dashboard):
         , "dashboard.appliance.getOrganizationApplianceVpnVpnFirewallRules(organization_id)"
         , "dashboard.appliance.getNetworkApplianceWarmSpare(network_id)"
                  ]
-    outfile = ""
+    
+    #iterate over API calls
     for api_call in api_calls:
-        try:
+        try: #evaluating the calls
             config = eval(api_call)
-        except:
+        except: #if an error is raised print error + api call
             print("Error processing Request ", api_call)
-        else:
+        else: #otherwise we write to the json file with the output of the call
             with open(output_file, "a") as outfile:
                 json.dump(config, outfile, indent = 4)
                 outfile.write("\n")
@@ -91,12 +93,11 @@ if __name__ == '__main__':
     network_id_raw = dashboard.organizations.getOrganizationNetworks(org_id, total_pages='all')
 
     #split that input by network
-    i = 0
-    network_ids = []
-    output_file = ""
+    network_ids = [] #keep track of your network names
+    output_file = "" #initialize output file variable
     for entry in network_id_raw:
         network = entry["id"]
-        if "appliance" not in entry['productTypes']:
+        if "appliance" not in entry['productTypes']: #exclude networks without security appliances
             print("Your network does not contain a security appliance, skipping")
             continue
         output_file = entry["name"] + ".json"
