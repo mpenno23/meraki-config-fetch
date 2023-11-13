@@ -1,3 +1,5 @@
+import datetime
+
 import meraki
 import os
 import json
@@ -97,7 +99,10 @@ def run():
         if "appliance" not in entry['productTypes']:  # exclude networks without security appliances
             print("Your network does not contain a security appliance, skipping")
             continue
-        output_file = entry["name"] + ".jsonl"
+        # Get the current date in the format of YYYYMMDD
+        current_datetime_with_min_sec = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+        # New file name with the current date appended
+        output_file = entry["name"] + f"_{current_datetime_with_min_sec}" + ".jsonl"
         network_ids.append(network)
         get_config(network, output_file, dashboard, org_id)
 
