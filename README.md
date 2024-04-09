@@ -1,4 +1,4 @@
-# Meraki MX Network COnfiguration Fetcher
+# Meraki MX Network Configuration Fetcher
 
 This is a Python script that fetches configuration data from Meraki appliances using the Meraki Dashboard API. It can retrieve information from various endpoints and save them to a JSON file.
 
