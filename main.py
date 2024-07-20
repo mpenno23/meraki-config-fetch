@@ -1,5 +1,4 @@
 import datetime
-
 import meraki
 import os
 import json
@@ -35,30 +34,30 @@ def get_config(network_id, output_file, dashboard, organization_id):
                  ("getNetworkApplianceFirewallPortForwardingRules", (network_id,)),
                  ("getNetworkApplianceFirewallSettings", (network_id,)),  # Removed "firewallOptions = "
                  ("getNetworkAppliancePorts", (network_id,)),
-                 ("getNetworkAppliancePort", (network_id, port_id)),  # Assuming port_id is defined
+                 #("getNetworkAppliancePort", (network_id, port_id)),  # Assuming port_id is defined
                  ("getNetworkAppliancePrefixesDelegatedStatics", (network_id,)),
-                 ("getNetworkAppliancePrefixesDelegatedStatic", (network_id, static_delegated_prefix_id)),
+                 #("getNetworkAppliancePrefixesDelegatedStatic", (network_id, static_delegated_prefix_id)),
                  # Assuming static_delegated_prefix_id is defined
                  ("getDeviceApplianceRadioSettings", (serial,)),  # Assuming serial is defined
                  ("getNetworkApplianceRfProfiles", (network_id,)),
-                 ("getNetworkApplianceRfProfile", (network_id, rf_profile_id)),  # Assuming rf_profile_id is defined
+                 #("getNetworkApplianceRfProfile", (network_id, rf_profile_id)),  # Assuming rf_profile_id is defined
                  ("getNetworkApplianceSecurityIntrusion", (network_id,)),
                  ("getOrganizationApplianceSecurityIntrusion", (organization_id,)),
                  ("getNetworkApplianceSecurityMalware", (network_id,)),
                  ("getNetworkApplianceSingleLan", (network_id,)),
                  ("getNetworkApplianceSsids", (network_id,)),
                  ("getNetworkApplianceStaticRoutes", (network_id,)),
-                 ("getNetworkApplianceStaticRoute", (network_id, static_route_id)),
+                 #("getNetworkApplianceStaticRoute", (network_id, static_route_id)),
                  ("getNetworkApplianceTrafficShaping", (network_id,)),
                  ("getNetworkApplianceTrafficShapingCustomPerformanceClasses", (network_id,)),
-                 ("getNetworkApplianceTrafficShapingCustomPerformanceClass", (network_id, custom_performance_class_id)),
+                 #("getNetworkApplianceTrafficShapingCustomPerformanceClass", (network_id, custom_performance_class_id)),
                  ("getNetworkApplianceTrafficShapingRules", (network_id,)),
                  ("getNetworkApplianceTrafficShapingUplinkBandwidth", (network_id,)),
                  ("getNetworkApplianceTrafficShapingUplinkSelection", (network_id,)),
                  ("getOrganizationApplianceTrafficShapingVpnExclusionsByNetwork", (organization_id, 'all')),
                  ("getDeviceApplianceUplinksSettings", (serial,)),
                  ("getNetworkApplianceVlans", (network_id,)),
-                 ("getNetworkApplianceVlan", (network_id, vlan_id)),
+                 #("getNetworkApplianceVlan", (network_id, vlan_id)),
                  ("getNetworkApplianceVlansSettings", (network_id,)),
                  ("getNetworkApplianceVpnBgp", (network_id,)),
                  ("getNetworkApplianceVpnSiteToSiteVpn", (network_id,)),
@@ -66,23 +65,30 @@ def get_config(network_id, output_file, dashboard, organization_id):
                  ("getOrganizationApplianceVpnVpnFirewallRules", (organization_id,)),
                  ("getNetworkApplianceWarmSpare", (network_id,))]
 
-    with open(output_file, "w") as outfile:
-        for api_call in api_calls:
-            method_name, args = api_call
-            try:  # evaluating the calls
-                method_to_call = getattr(dashboard.appliance, method_name)
-                config = method_to_call(*args)
-            except Exception as e:  # if an error is raised print error + api call
-                print(f"Error processing Request {api_call}, error: {e}")
-            else:  # otherwise we write to the json file with the output of the call
-                json.dump(config, outfile, indent=4)
-                outfile.write("\n")
-
+    outfile = open(output_file, "w")
+    configContentsPlaceHolder = []
+    for api_call in api_calls:
+        method_name, args = api_call
+        body = dict()
+        try:  # evaluating the calls
+            method_to_call = getattr(dashboard.appliance, method_name)
+            config = method_to_call(*args)
+            #add a field for the name of the call and the configuration from the dash
+            body["name"] = method_name
+            body["config"] = config
+        except Exception as e:  # if an error is raised print error + api call
+            print(f"Error processing Request {api_call}, error: {e}")
+        else:  # otherwise we write to the json file with the output of the call
+            #convert dict into string so we can output it one line to a jsonl file
+            stringBody = str(body)
+            outfile.write(stringBody)
+            #add a newline in between one call and the next
+            outfile.write("\n")
 
 def run():
     # you can set up environment variables by going to your CLI and inputting "export VARIABLE_NAME=<VALUE>"
     # load api key
-    load_dotenv(override=True, dotenv_path=".env")  # take environment variables from .env.
+    load_dotenv(override=True, dotenv_path="var.env")  # take environment variables from .env.
     api_key = os.environ.get("MERAKI_API_KEY")
     dashboard = meraki.DashboardAPI(api_key)
 
@@ -105,6 +111,8 @@ def run():
         output_file = entry["name"] + f"_{current_datetime_with_min_sec}" + ".jsonl"
         network_ids.append(network)
         get_config(network, output_file, dashboard, org_id)
+
+
 
 
 if __name__ == '__main__':
