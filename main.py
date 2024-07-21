@@ -2,6 +2,7 @@ import datetime
 import meraki
 import os
 import json
+import jsonlines
 
 from dotenv import load_dotenv
 
@@ -79,11 +80,19 @@ def get_config(network_id, output_file, dashboard, organization_id):
         except Exception as e:  # if an error is raised print error + api call
             print(f"Error processing Request {api_call}, error: {e}")
         else:  # otherwise we write to the json file with the output of the call
+
             #convert dict into string so we can output it one line to a jsonl file
             stringBody = str(body)
+
+            #replace single with double quotes, True with true, and False with false
+            stringBody = stringBody.replace("'", '"')
+            stringBody = stringBody.replace("True", "true")
+            stringBody = stringBody.replace("False", "false")
             outfile.write(stringBody)
+
             #add a newline in between one call and the next
             outfile.write("\n")
+    outfile.close()
 
 def run():
     # you can set up environment variables by going to your CLI and inputting "export VARIABLE_NAME=<VALUE>"
@@ -111,7 +120,6 @@ def run():
         output_file = entry["name"] + f"_{current_datetime_with_min_sec}" + ".jsonl"
         network_ids.append(network)
         get_config(network, output_file, dashboard, org_id)
-
 
 
 
