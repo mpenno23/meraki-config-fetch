@@ -6,11 +6,72 @@ import jsonlines
 
 from dotenv import load_dotenv
 
+def fixJsonlFormat(body, outfile):
+    # convert dict into string so we can output it one line to a jsonl file
+    stringBody = str(body)
 
+    #trim down unnecessary api output for some calls
+
+    #output includes unnecessary key "id" and dictionary "name" values
+    if body['name'] == "getNetworkApplianceContentFiltering":
+        config = body.get('config')
+        blockedUrlCategories = config.get('blockedUrlCategories')
+        trimBlockedUrlCategories = []
+        for dictionary in blockedUrlCategories:
+            for k,v in dictionary.items():
+                if k == 'id':
+                    trimBlockedUrlCategories.append(v)
+        #replace the old dictionary with a list of blocked categories without "id" or "name"
+        stringBody = stringBody.replace(str(blockedUrlCategories), str(trimBlockedUrlCategories))
+        # replace single with double quotes, True with true, and False with false
+        stringBody = stringBody.replace("'", '"')
+        stringBody = stringBody.replace("True", "true")
+        stringBody = stringBody.replace("False", "false")
+        outfile.write(stringBody)
+
+    #add "allowedIPs" section if that has not already been included and defaults to 0.0.0.0 and should be ignored
+    elif body['name'] == "getNetworkApplianceFirewallFirewalledService":
+        config = body['config']
+        if config.get('allowedIps') is None:
+            config['allowedIps'] = ["0.0.0.0"]
+        # redefine stringBody again so it gets updated
+        stringBody = str(body)
+        # replace single with double quotes, True with true, and False with false
+        stringBody = stringBody.replace("'", '"')
+        stringBody = stringBody.replace("True", "true")
+        stringBody = stringBody.replace("False", "false")
+        outfile.write(stringBody)
+
+    #syslog default value to be true since None throws an error
+    elif body['name'] == "getNetworkApplianceFirewallInboundFirewallRules":
+        config = body['config']
+        if config['syslogDefaultRule'] == None:
+            config['syslogDefaultRule'] = False
+        stringBody = str(body)
+        # replace single with double quotes, True with true, and False with false
+        stringBody = stringBody.replace("'", '"')
+        stringBody = stringBody.replace("True", "true")
+        stringBody = stringBody.replace("False", "false")
+        outfile.write(stringBody)
+
+    #elif body['name'] == "getNetworkAppliancePorts":
+        #config = body['config']
+
+    else:
+        stringBody = str(body)
+        # replace single with double quotes, True with true, and False with false
+        stringBody = stringBody.replace("'", '"')
+        stringBody = stringBody.replace("True", "true")
+        stringBody = stringBody.replace("False", "false")
+        stringBody = stringBody.replace("None", "Null")
+        outfile.write(stringBody)
+
+    # add a newline in between one call and the next
+    outfile.write("\n")
 def get_config(network_id, output_file, dashboard, organization_id):
     # PLEASE NOTE SOME OF THESE CALLS REQUIRE OTHER VARIABLES LISTED BELOW
     serial = 0
-    port_id = 0
+    port_id = 4
     static_delegated_prefix_id = 0
     rf_profile_id = 0
     static_route_id = 0
@@ -21,7 +82,7 @@ def get_config(network_id, output_file, dashboard, organization_id):
     api_calls = [("getNetworkApplianceConnectivityMonitoringDestinations", (network_id,)),
                  ("getNetworkApplianceContentFiltering", (network_id,)),
                  ("getNetworkApplianceFirewallCellularFirewallRules", (network_id,)),
-                 ("getNetworkApplianceFirewallFirewalledServices", (network_id,)),
+                 #("getNetworkApplianceFirewallFirewalledServices", (network_id,)),
                  ("getNetworkApplianceFirewallFirewalledService", (network_id, 'ICMP')),
                  ("getNetworkApplianceFirewallFirewalledService", (network_id, 'SNMP')),
                  ("getNetworkApplianceFirewallFirewalledService", (network_id, 'web')),
@@ -35,7 +96,7 @@ def get_config(network_id, output_file, dashboard, organization_id):
                  ("getNetworkApplianceFirewallPortForwardingRules", (network_id,)),
                  ("getNetworkApplianceFirewallSettings", (network_id,)),  # Removed "firewallOptions = "
                  ("getNetworkAppliancePorts", (network_id,)),
-                 #("getNetworkAppliancePort", (network_id, port_id)),  # Assuming port_id is defined
+                 ("getNetworkAppliancePort", (network_id, port_id)),  # Assuming port_id is defined
                  ("getNetworkAppliancePrefixesDelegatedStatics", (network_id,)),
                  #("getNetworkAppliancePrefixesDelegatedStatic", (network_id, static_delegated_prefix_id)),
                  # Assuming static_delegated_prefix_id is defined
@@ -81,17 +142,7 @@ def get_config(network_id, output_file, dashboard, organization_id):
             print(f"Error processing Request {api_call}, error: {e}")
         else:  # otherwise we write to the json file with the output of the call
 
-            #convert dict into string so we can output it one line to a jsonl file
-            stringBody = str(body)
-
-            #replace single with double quotes, True with true, and False with false
-            stringBody = stringBody.replace("'", '"')
-            stringBody = stringBody.replace("True", "true")
-            stringBody = stringBody.replace("False", "false")
-            outfile.write(stringBody)
-
-            #add a newline in between one call and the next
-            outfile.write("\n")
+            fixJsonlFormat(body, outfile)
     outfile.close()
 
 def run():
